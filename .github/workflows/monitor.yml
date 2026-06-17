@@ -32,3 +32,8 @@ jobs:
       - name: Log success
         if: steps.check.outputs.status == 'success'
         run: echo "✅ Все поды здоровы"
+        
+      - name: Test Slack
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: curl -X POST -H 'Content-type: application/json' --data '{"text":"Test from GitHub"}' $SLACK_WEBHOOK
