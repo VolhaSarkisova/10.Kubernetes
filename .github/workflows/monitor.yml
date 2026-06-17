@@ -9,10 +9,10 @@ jobs:
   check-pods:
     runs-on: [my_runner_10]
     steps:
-      - name: Check pods status
+      - name: Check failed pods
         id: check
         run: |
-          FAILED=$(kubectl get pods -A -o json | jq -r '.items[] | select(.status.phase != "Running" and .status.phase != "Succeeded") | .metadata.namespace + "/" + .metadata.name')
+          FAILED=$(kubectl get pods -A --no-headers | grep -E "CrashLoopBackOff|Error|Failed|ImagePullBackOff|Pending" || true)
           if [ -n "$FAILED" ]; then
             echo "FAILED_PODS=$FAILED" >> $GITHUB_ENV
             echo "status=failure" >> $GITHUB_OUTPUT
@@ -26,5 +26,9 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         run: |
           curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\":\"❌ *Crashed/Failed pods detected:*\n$FAILED_PODS\"}" \
+            --data "{\"text\":\"❌ *Проблемные поды в кластере:*\n$FAILED_PODS\"}" \
             $SLACK_WEBHOOK
+
+      - name: Log success
+        if: steps.check.outputs.status == 'success'
+        run: echo "✅ Все поды здоровы"
